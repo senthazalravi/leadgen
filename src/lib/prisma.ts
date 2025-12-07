@@ -2,21 +2,6 @@
 
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { PrismaClient } from "@/generated/prisma/client";
-
-declare global {
-  var prisma: PrismaClient | undefined;
-}
-
-export const prisma =
-  global.prisma ??
-  new PrismaClient({
-    datasourceUrl: process.env.DATABASE_URL,
-  });
-
-if (!global.prisma) global.prisma = prisma;
-
-export { prisma };
 
 export async function loginAction(prevState: any, formData: FormData) {
 
