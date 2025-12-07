@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 
 type LeadStatus = "HOT" | "COLD" | "WARM" | "PROGRESS" | "COMPLETED" | "DISQUALIFIED";
@@ -18,8 +18,10 @@ type Lead = {
   createdAt: string;
 };
 
-export default function LeadDetailPage({ params }: { params: { id: string } }) {
+export default function LeadDetailPage() {
   const router = useRouter();
+  const params = useParams<{ id: string }>();
+  const id = params?.id;
   const [lead, setLead] = useState<Lead | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -27,8 +29,9 @@ export default function LeadDetailPage({ params }: { params: { id: string } }) {
 
   useEffect(() => {
     const fetchLead = async () => {
+      if (!id) return;
       try {
-        const res = await fetch(`/api/leads/${params.id}`);
+        const res = await fetch(`/api/leads/${id}`);
         if (!res.ok) {
           setError("Failed to load lead");
           return;
@@ -43,14 +46,15 @@ export default function LeadDetailPage({ params }: { params: { id: string } }) {
     };
 
     fetchLead();
-  }, [params.id]);
+  }, [id]);
 
   const handleDelete = async () => {
+    if (!id) return;
     if (!confirm("Are you sure you want to delete this lead?")) return;
 
     setDeleting(true);
     try {
-      const res = await fetch(`/api/leads/${params.id}`, { method: "DELETE" });
+      const res = await fetch(`/api/leads/${id}`, { method: "DELETE" });
       if (!res.ok) {
         setError("Failed to delete lead");
         setDeleting(false);
