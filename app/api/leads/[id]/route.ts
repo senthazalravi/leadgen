@@ -4,9 +4,10 @@ import { neon } from '@neondatabase/serverless';
 // GET /api/leads/[id] - fetch a single lead
 export async function GET(
   _req: Request,
-  { params }: { params: { id: string } }
+  context: any,
 ) {
-  const id = Number(params.id);
+  const params = await context.params;
+  const id = Number(params?.id);
   if (Number.isNaN(id)) {
     return NextResponse.json({ error: 'Invalid id' }, { status: 400 });
   }
@@ -30,9 +31,10 @@ export async function GET(
 // DELETE /api/leads/[id] - delete a single lead
 export async function DELETE(
   _req: Request,
-  { params }: { params: { id: string } }
+  context: any,
 ) {
-  const id = Number(params.id);
+  const params = await context.params;
+  const id = Number(params?.id);
   if (Number.isNaN(id)) {
     return NextResponse.json({ error: 'Invalid id' }, { status: 400 });
   }
