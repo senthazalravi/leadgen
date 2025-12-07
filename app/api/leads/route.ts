@@ -5,8 +5,8 @@ import { neon } from '@neondatabase/serverless';
 export async function GET() {
   try {
     const sql = neon(process.env.NEON_DATABASE_URL!);
-    console.log('[GET /api/leads] Fetching leads from Neon DB');
-    const rows = await sql`SELECT * FROM "Lead" ORDER BY "createdAt" DESC`;
+    console.log('[GET /api/leads] Fetching active leads from Neon DB');
+    const rows = await sql`SELECT * FROM "Lead" WHERE "deleted" = false ORDER BY "createdAt" DESC`;
     console.log('[GET /api/leads] Loaded leads:', rows.length);
     return NextResponse.json(rows);
   } catch (error) {

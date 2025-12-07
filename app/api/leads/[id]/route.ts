@@ -46,8 +46,14 @@ export async function DELETE(
 
   try {
     const sql = neon(process.env.NEON_DATABASE_URL!);
-    console.log('[DELETE /api/leads/[id]] Deleting lead with id:', id);
-    const result = await sql`DELETE FROM "Lead" WHERE "id" = ${id} RETURNING "id"`;
+    console.log('[DELETE /api/leads/[id]] Soft-deleting lead with id:', id);
+    const result = await sql`
+      UPDATE "Lead"
+      SET "deleted" = true,
+          "updatedAt" = NOW()
+      WHERE "id" = ${id}
+      RETURNING "id"
+    `;
 
     if (result.length === 0) {
       console.warn('[DELETE /api/leads/[id]] Lead not found for id:', id);

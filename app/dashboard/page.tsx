@@ -81,6 +81,12 @@ export default function DashboardPage() {
           <div className="flex justify-between items-center mb-6">
             <h1 className="text-2xl font-semibold text-gray-900">Leads</h1>
             <div className="flex items-center space-x-3">
+              <Link
+                href="/leads/deleted"
+                className="text-sm text-gray-600 hover:text-gray-900"
+              >
+                Deleted Leads
+              </Link>
               <div className="inline-flex rounded-md shadow-sm" role="group">
                 <button
                   type="button"
