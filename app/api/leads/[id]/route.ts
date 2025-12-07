@@ -9,21 +9,25 @@ export async function GET(
   const params = await context.params;
   const id = Number(params?.id);
   if (Number.isNaN(id)) {
+    console.warn('[GET /api/leads/[id]] Invalid id param:', params?.id);
     return NextResponse.json({ error: 'Invalid id' }, { status: 400 });
   }
 
   try {
     const sql = neon(process.env.NEON_DATABASE_URL!);
+    console.log('[GET /api/leads/[id]] Fetching lead with id:', id);
     const rows = await sql`SELECT * FROM "Lead" WHERE "id" = ${id}`;
     const lead = rows[0];
 
     if (!lead) {
+      console.warn('[GET /api/leads/[id]] Lead not found for id:', id);
       return NextResponse.json({ error: 'Lead not found' }, { status: 404 });
     }
 
+    console.log('[GET /api/leads/[id]] Loaded lead');
     return NextResponse.json(lead);
   } catch (error) {
-    console.error('Error fetching lead from Neon:', error);
+    console.error('[GET /api/leads/[id]] Error fetching lead from Neon:', error);
     return NextResponse.json({ error: 'Failed to load lead' }, { status: 500 });
   }
 }
@@ -36,20 +40,24 @@ export async function DELETE(
   const params = await context.params;
   const id = Number(params?.id);
   if (Number.isNaN(id)) {
+    console.warn('[DELETE /api/leads/[id]] Invalid id param:', params?.id);
     return NextResponse.json({ error: 'Invalid id' }, { status: 400 });
   }
 
   try {
     const sql = neon(process.env.NEON_DATABASE_URL!);
+    console.log('[DELETE /api/leads/[id]] Deleting lead with id:', id);
     const result = await sql`DELETE FROM "Lead" WHERE "id" = ${id} RETURNING "id"`;
 
     if (result.length === 0) {
+      console.warn('[DELETE /api/leads/[id]] Lead not found for id:', id);
       return NextResponse.json({ error: 'Lead not found' }, { status: 404 });
     }
 
+    console.log('[DELETE /api/leads/[id]] Lead deleted');
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Error deleting lead from Neon:', error);
+    console.error('[DELETE /api/leads/[id]] Error deleting lead from Neon:', error);
     return NextResponse.json({ error: 'Failed to delete lead' }, { status: 500 });
   }
 }

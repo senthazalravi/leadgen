@@ -5,10 +5,12 @@ import { neon } from '@neondatabase/serverless';
 export async function GET() {
   try {
     const sql = neon(process.env.NEON_DATABASE_URL!);
+    console.log('[GET /api/leads] Fetching leads from Neon DB');
     const rows = await sql`SELECT * FROM "Lead" ORDER BY "createdAt" DESC`;
+    console.log('[GET /api/leads] Loaded leads:', rows.length);
     return NextResponse.json(rows);
   } catch (error) {
-    console.error('Error fetching leads from Neon:', error);
+    console.error('[GET /api/leads] Error fetching leads from Neon:', error);
     return NextResponse.json({ error: 'Failed to load leads' }, { status: 500 });
   }
 }
@@ -27,6 +29,7 @@ export async function POST(request: Request) {
     const notes = (formData.get('notes') as string) ?? '';
 
     if (!name.trim()) {
+      console.warn('[POST /api/leads] Missing name field');
       return NextResponse.json({ error: 'Name is required' }, { status: 400 });
     }
 
@@ -50,6 +53,17 @@ export async function POST(request: Request) {
         status = 'HOT';
         break;
     }
+
+    console.log('[POST /api/leads] Creating lead with data:', {
+      name,
+      country,
+      rawStatus,
+      mappedStatus: status,
+      phoneNumber,
+      whatsappNumber,
+      website,
+      hasNotes: !!notes,
+    });
 
     const sql = neon(process.env.NEON_DATABASE_URL!);
 
@@ -81,9 +95,10 @@ export async function POST(request: Request) {
     `;
 
     const lead = rows[0];
+    console.log('[POST /api/leads] Created lead with id:', lead?.id);
     return NextResponse.json(lead, { status: 201 });
   } catch (error) {
-    console.error('Error creating lead in Neon:', error);
+    console.error('[POST /api/leads] Error creating lead in Neon:', error);
     return NextResponse.json({ error: 'Failed to create lead' }, { status: 500 });
   }
 }
