@@ -1,23 +1,45 @@
 "use client";
 
 import { useEffect, useState } from 'react';
-import { cookies } from 'next/headers';
-import { redirect } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Lead, LeadStatus } from '@/generated/prisma';
-import { prisma } from '@/lib/prisma';
+
+type LeadStatus = 'HOT' | 'COLD' | 'WARM' | 'PROGRESS' | 'COMPLETED';
+
+type Lead = {
+  id: string;
+  name: string;
+  country: string;
+  status: LeadStatus;
+  phoneNumber: string;
+  whatsappNumber: string;
+  website: string;
+  notes: string;
+  createdAt: string;
+};
 
 export default function DashboardPage() {
+  const router = useRouter();
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    const checkAuth = async () => {
+      const res = await fetch('/api/auth/check');
+      if (!res.ok) {
+        router.push('/login');
+      }
+    };
+    
+    checkAuth();
+    
     const fetchLeads = async () => {
       try {
-        const data = await prisma.lead.findMany({
-          orderBy: { createdAt: 'desc' }
-        });
-        setLeads(data);
+        const res = await fetch('/api/leads');
+        if (res.ok) {
+          const data = await res.json();
+          setLeads(data);
+        }
       } catch (error) {
         console.error('Error fetching leads:', error);
       } finally {
@@ -26,14 +48,7 @@ export default function DashboardPage() {
     };
 
     fetchLeads();
-  }, []);
-
-  const cookieStore = cookies();
-  const session = cookieStore.get('session');
-
-  if (!session) {
-    redirect('/login');
-  }
+  }, [router]);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -46,21 +61,15 @@ export default function DashboardPage() {
               </Link>
             </div>
             <div className="flex items-center">
-              <form 
-                action={async () => {
-                  'use server';
-                  cookies().delete('session');
-                  redirect('/login');
+              <button 
+                onClick={async () => {
+                  await fetch('/api/auth/logout', { method: 'POST' });
+                  router.push('/login');
                 }}
-                className="flex items-center"
+                className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-md text-sm font-medium"
               >
-                <button 
-                  type="submit" 
-                  className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-md text-sm font-medium"
-                >
-                  Logout
-                </button>
-              </form>
+                Logout
+              </button>
             </div>
           </div>
         </div>
@@ -95,9 +104,9 @@ export default function DashboardPage() {
                           <p className="text-sm text-gray-500">{lead.country}</p>
                         </div>
                         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                          lead.status === LeadStatus.HOT 
+                          lead.status === 'HOT' 
                             ? 'bg-red-100 text-red-800' 
-                            : lead.status === LeadStatus.PROGRESS 
+                            : lead.status === 'PROGRESS' 
                             ? 'bg-yellow-100 text-yellow-800' 
                             : 'bg-gray-100 text-gray-800'
                         }`}>
