@@ -26,6 +26,7 @@ export async function POST(request: Request) {
     const phoneNumber = (formData.get('phoneNumber') as string) ?? '';
     const whatsappNumber = (formData.get('whatsappNumber') as string) ?? '';
     const website = (formData.get('website') as string) ?? '';
+    const email = (formData.get('email') as string) ?? '';
     const notes = (formData.get('notes') as string) ?? '';
 
     if (!name.trim()) {
@@ -62,6 +63,7 @@ export async function POST(request: Request) {
       phoneNumber,
       whatsappNumber,
       website,
+      email,
       hasNotes: !!notes,
     });
 
@@ -75,6 +77,7 @@ export async function POST(request: Request) {
         "whatsappNumber",
         "dealProfile",
         "website",
+        "email",
         "notes",
         "status",
         "createdAt",
@@ -86,6 +89,7 @@ export async function POST(request: Request) {
         ${whatsappNumber || null},
         ${null},
         ${website || null},
+        ${email || null},
         ${notes || null},
         ${status}::"LeadStatus",
         NOW(),
