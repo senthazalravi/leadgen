@@ -67,3 +67,42 @@ export async function DELETE(
     return NextResponse.json({ error: 'Failed to delete lead' }, { status: 500 });
   }
 }
+
+// PUT /api/leads/[id] - update a single lead
+export async function PUT(request: Request, context: any) {
+  const params = await context.params;
+  const id = Number(params?.id);
+  if (Number.isNaN(id)) {
+    console.warn('[PUT /api/leads/[id]] Invalid id param:', params?.id);
+    return NextResponse.json({ error: 'Invalid id' }, { status: 400 });
+  }
+
+  try {
+    const sql = neon(process.env.NEON_DATABASE_URL!);
+    const updatedLead = await request.json();
+    console.log('[PUT /api/leads/[id]] Updating lead with id:', id, 'Data:', updatedLead);
+    const result = await sql`
+      UPDATE \"Lead\"
+      SET 
+        \"name\" = ${updatedLead.name},
+        \"country\" = ${updatedLead.country},
+        \"status\" = ${updatedLead.status},
+        \"phoneNumber\" = ${updatedLead.phoneNumber},
+        \"whatsappNumber\" = ${updatedLead.whatsappNumber},
+        \"website\" = ${updatedLead.website},
+        \"notes\" = ${updatedLead.notes},
+        \"updatedAt\" = NOW()
+      WHERE \"id\" = ${id}
+      RETURNING *
+    `;
+    if (result.length === 0) {
+      console.warn('[PUT /api/leads/[id]] Lead not found for id:', id);
+      return NextResponse.json({ error: 'Lead not found' }, { status: 404 });
+    }
+    console.log('[PUT /api/leads/[id]] Lead updated');
+    return NextResponse.json(result[0]);
+  } catch (error) {
+    console.error('[PUT /api/leads/[id]] Error updating lead from Neon:', error);
+    return NextResponse.json({ error: 'Failed to update lead' }, { status: 500 });
+  }
+}

@@ -23,9 +23,11 @@ export default function LeadDetailPage() {
   const params = useParams<{ id: string }>();
   const id = params?.id;
   const [lead, setLead] = useState<Lead | null>(null);
+  const [editedLead, setEditedLead] = useState<Lead | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     const fetchLead = async () => {
@@ -38,6 +40,7 @@ export default function LeadDetailPage() {
         }
         const data = await res.json();
         setLead(data);
+        setEditedLead(data);
       } catch (err) {
         setError("Unexpected error while loading lead");
       } finally {
@@ -47,6 +50,32 @@ export default function LeadDetailPage() {
 
     fetchLead();
   }, [id]);
+
+  const handleSave = async () => {
+    if (!id || !editedLead) return;
+    setSaving(true);
+    try {
+      const res = await fetch(`/api/leads/${id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(editedLead),
+      });
+      if (!res.ok) {
+        setError("Failed to save lead");
+        setSaving(false);
+        return;
+      }
+      const updatedLead = await res.json();
+      setLead(updatedLead);
+      setEditedLead(updatedLead);
+      setSaving(false);
+    } catch (err) {
+      setError("Unexpected error while saving lead");
+      setSaving(false);
+    }
+  };
 
   const handleDelete = async () => {
     if (!id) return;
@@ -91,34 +120,70 @@ export default function LeadDetailPage() {
           <div className="bg-white shadow-sm rounded-lg p-6 space-y-4">
             <div className="flex justify-between items-start">
               <div>
-                <h1 className="text-2xl font-semibold text-gray-900">{lead.name}</h1>
-                {lead.country && (
-                  <p className="text-sm text-gray-500">{lead.country}</p>
+                <input
+                  type="text"
+                  value={editedLead.name}
+                  onChange={(e) => setEditedLead({ ...editedLead, name: e.target.value })}
+                  className="text-2xl font-semibold text-gray-900 bg-transparent border-b border-gray-300 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 rounded-md p-1"
+                />
+                {editedLead.country && (
+                  <input
+                    type="text"
+                    value={editedLead.country}
+                    onChange={(e) => setEditedLead({ ...editedLead, country: e.target.value })}
+                    className="text-sm text-gray-500 bg-transparent border-b border-gray-300 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 rounded-md p-1"
+                  />
                 )}
               </div>
-              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                {lead.status}
-              </span>
+              <select
+                value={editedLead.status}
+                onChange={(e) => setEditedLead({ ...editedLead, status: e.target.value as LeadStatus })}
+                className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800"
+              >
+                <option value="HOT">HOT</option>
+                <option value="COLD">COLD</option>
+                <option value="WARM">WARM</option>
+                <option value="PROGRESS">PROGRESS</option>
+                <option value="COMPLETED">COMPLETED</option>
+                <option value="DISQUALIFIED">DISQUALIFIED</option>
+              </select>
             </div>
 
             <div className="space-y-2 text-sm text-gray-700">
-              {lead.phoneNumber && <p>📞 {lead.phoneNumber}</p>}
-              {lead.whatsappNumber && <p>💬 {lead.whatsappNumber}</p>}
-              {lead.website && (
-                <p>
-                  🌐
-                  <a
-                    href={lead.website}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-indigo-600 hover:underline ml-1"
-                  >
-                    {lead.website}
-                  </a>
-                </p>
+              {editedLead.phoneNumber && (
+                <input
+                  type="tel"
+                  value={editedLead.phoneNumber}
+                  onChange={(e) => setEditedLead({ ...editedLead, phoneNumber: e.target.value })}
+                  className="bg-transparent border-b border-gray-300 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 rounded-md p-1"
+                  placeholder="Phone Number"
+                />
               )}
-              {lead.notes && (
-                <p className="mt-2 whitespace-pre-wrap">{lead.notes}</p>
+              {editedLead.whatsappNumber && (
+                <input
+                  type="tel"
+                  value={editedLead.whatsappNumber}
+                  onChange={(e) => setEditedLead({ ...editedLead, whatsappNumber: e.target.value })}
+                  className="bg-transparent border-b border-gray-300 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 rounded-md p-1"
+                  placeholder="WhatsApp Number"
+                />
+              )}
+              {editedLead.website && (
+                <input
+                  type="url"
+                  value={editedLead.website}
+                  onChange={(e) => setEditedLead({ ...editedLead, website: e.target.value })}
+                  className="bg-transparent border-b border-gray-300 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 rounded-md p-1"
+                  placeholder="Website"
+                />
+              )}
+              {editedLead.notes && (
+                <textarea
+                  value={editedLead.notes}
+                  onChange={(e) => setEditedLead({ ...editedLead, notes: e.target.value })}
+                  className="mt-2 whitespace-pre-wrap p-2 border rounded-md"
+                  placeholder="Notes"
+                />
               )}
               <p className="text-xs text-gray-400 mt-4">
                 Created at: {new Date(lead.createdAt).toLocaleString()}
@@ -132,6 +197,14 @@ export default function LeadDetailPage() {
               >
                 Back
               </Link>
+              <button
+                type="button"
+                onClick={handleSave}
+                disabled={saving}
+                className="inline-flex items-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-60"
+              >
+                {saving ? "Saving..." : "Save Changes"}
+              </button>
               <button
                 type="button"
                 onClick={handleDelete}
