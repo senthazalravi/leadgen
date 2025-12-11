@@ -15,6 +15,7 @@ type Lead = {
   whatsappNumber?: string | null;
   website?: string | null;
   notes?: string | null;
+  email?: string | null;
   createdAt: string;
 };
 
@@ -28,6 +29,10 @@ export default function LeadDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [emailError, setEmailError] = useState<string | null>(null);
+  const [templates, setTemplates] = useState<Array<{ id: number; title: string; content: string }>>([]);
+  const [selectedTemplate, setSelectedTemplate] = useState<number | null>(null);
 
   useEffect(() => {
     const fetchLead = async () => {
@@ -50,6 +55,15 @@ export default function LeadDetailPage() {
 
     fetchLead();
   }, [id]);
+
+  useEffect(() => {
+    const fetchTemplates = async () => {
+      const res = await fetch("/api/templates");
+      const data = await res.json();
+      setTemplates(data);
+    };
+    fetchTemplates();
+  }, []);
 
   const handleSave = async () => {
     if (!id || !editedLead) return;
@@ -93,6 +107,36 @@ export default function LeadDetailPage() {
     } catch (err) {
       setError("Unexpected error while deleting lead");
       setDeleting(false);
+    }
+  };
+
+  const handleSendEmail = async () => {
+    if (!selectedTemplate || !editedLead?.email) {
+      setEmailError("Please select a template and provide an email address");
+      return;
+    }
+    setSending(true);
+    setEmailError(null);
+    try {
+      const res = await fetch("/api/send-email", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          templateId: selectedTemplate,
+          email: editedLead.email,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to send email");
+      }
+      alert("Email sent successfully!");
+    } catch (err) {
+      setEmailError(err instanceof Error ? err.message : "Failed to send email");
+    } finally {
+      setSending(false);
     }
   };
 
@@ -185,10 +229,42 @@ export default function LeadDetailPage() {
                   placeholder="Notes"
                 />
               )}
+              <input
+                type="email"
+                value={editedLead.email || ""}
+                onChange={(e) => setEditedLead({ ...editedLead, email: e.target.value })}
+                className="bg-transparent border-b border-gray-300 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 rounded-md p-1 mt-2"
+                placeholder="Email"
+              />
               <p className="text-xs text-gray-400 mt-4">
                 Created at: {new Date(lead.createdAt).toLocaleString()}
               </p>
             </div>
+
+            <div className="mt-4">
+              <label className="block text-sm font-medium text-gray-700">Email Template</label>
+              <select
+                value={selectedTemplate || ""}
+                onChange={(e) => setSelectedTemplate(Number(e.target.value))}
+                className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
+              >
+                <option value="">Select a template</option>
+                {templates.map((template) => (
+                  <option key={template.id} value={template.id}>
+                    {template.title}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <button
+              type="button"
+              onClick={handleSendEmail}
+              disabled={!selectedTemplate || !editedLead?.email}
+              className="mt-4 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
+            >
+              {sending ? "Sending..." : "Send Email"}
+            </button>
+            {emailError && <p className="text-red-600 text-sm mt-2">{emailError}</p>}
 
             <div className="flex justify-end space-x-3 pt-4">
               <Link
